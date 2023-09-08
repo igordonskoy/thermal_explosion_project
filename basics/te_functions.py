@@ -29,3 +29,33 @@ def progonka(A, B): # TDMA realization
         X[i] = - c[i]*X[i+1] + d[i]
     return X
 
+
+def lin_diff(x,f):
+    # 1st order approximation of derivative
+    N = len(x);
+    df = np.zeros((N,1));
+    for i in range(0,N-1):
+        df[i] = (f[i+1]-f[i])/(x[i+1]-x[i]);
+    df[N-1] = df[N-2];
+    return df
+
+
+def quadro_diff(x,f):
+# 2nd order Lagrange polynom approximation of derivatives
+    N = len(x);
+    if len(x) != len(f):
+        print('Dimensions should be equal!')
+        return 0
+    elif len(x) == 1:
+        print('Not enough points!')
+        return 0
+    else:
+        df = np.zeros((N,1));
+        df[0] = (f[1]-f[0])/(x[1]-x[0]);                  # beginning and ending
+        df[N-1] = (f[N-1]-f[N-2])/(x[N-1]-x[N-2]);        # are approximated by straight differences
+        for i in range(1,N-1):
+            a1 = f[i-1]/(x[i-1]-x[i])/(x[i-1]-x[i+1]);
+            a2 = f[i]/(x[i]-x[i-1])/(x[i]-x[i+1]);
+            a3 = f[i+1]/(x[i+1]-x[i-1])/(x[i+1]-x[i]);
+            df[i] = x[i-1]*(-a2-a3) + x[i+1]*(-a1-a2) + x[i]*(a1 + a3+2*a2);
+        return df
