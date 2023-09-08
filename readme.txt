@@ -1,7 +1,7 @@
 The project is devoted to development of the numerical methods for combustion theory equations.
 The aim of the project is creation of a framework for both research and education purposes. 
 The project contains the following sections:
-> basics           (linear algebra, differential schemes)
+> basics           (linear algebra, difference schemes)
 > properties       (physical constants and thermophysical data)
 > semenov          (variants of Semenov model)
 > frankkamanetsky  (variants of Frank-Kamenetsky model)
