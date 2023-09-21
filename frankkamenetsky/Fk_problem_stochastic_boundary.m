@@ -21,7 +21,7 @@ t = 0; k = 1;                               % running variables
 solved = false;                             % solution flag
 while ~solved 
     k = k + 1; t(k) = t(k-1) + dt; T0 = T;  % counting and refreshing
-    T_env(k) = T_env(1) + sigma*randn;      % temperatire fluctuation
+    T_env(k) = T_env(k-1) + sqrt(dt)*sigma*randn;      % temperature drift
     Q = E - dt/h^2*A;                       % transition matrix
     Q(1,1) = 1; Q(1,2) = -1;                % zero gradient at center
     Q(N,N) = 1 + h*Bi; Q(N,N-1) = -1;       % third kind bc
