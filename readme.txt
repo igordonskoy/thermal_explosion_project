@@ -10,3 +10,4 @@ The project contains the following sections (at least, as a plan):
 > surface          (heterogneous combustion)
 > flow             (ignition and combustion in simple flows)
 > particles        (igntition and combustion of particles)
+> meltdown         (melting of symmetric bodies)
