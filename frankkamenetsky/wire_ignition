@@ -1,0 +1,86 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy import constants
+n = 1                       # symmetry 
+N = 1000                    # grid points
+D = 2                       # cylinder width in radii
+h = D/(N-1)                  # grid step
+r = np.arange(1, 1+D+h/2, h)  # grid
+
+g = (r + h)**n / r**n  # geometric factor
+
+A0 = np.zeros((N, 3))  # transfer matrix
+
+Da = 2e-15  # Damkohler number (reaction rate at ambient temperature)
+Tad = 307  # maximum combustion temperature
+Ar = 2e-2  # Arrhenius number 
+Le = 1      # Lewis number
+Ki = 180    # Kirpichev number (surface heat flow)
+Bo = 1.6    # Boltzmann number (radiative heat transfer)
+m = 2      # effective reaction order
+
+isplot = True  # plot the graph
+
+def wire_profile(Da, Tad, Ar, Le, Ki, Bo, m, isplot):
+    # transfer matrix filling 
+    for i in range(N):
+        A0[i,0], A0[i,1], A0[i,2] = 1, -(1 + g[i]), g[i]
+
+    T = np.zeros((N, 1)) # start temperature distribution 
+    C = np.ones((N, 1))  # start concentration distribution
+
+    A0[0,0], A0[0,1], A0[0,2] = 1, -1, 0        # boundary condition at wire surface
+    A0[N-1,0], A0[N-1,1], A0[N-1, 2] = 0, 0, 1  # outer boundary condition
+    k = 0          # iterations counter
+    solved = False  # solution convergence check
+    while not solved:  # main loop
+        AT = A0.copy()  # transfer matrices for temperature
+        AD = A0.copy()  # and concentration
+        k += 1
+        T0, C0 = T.copy(), C.copy()  # previous approximation
+        K = Da*np.exp(T0 / (1 + Ar * T0))  # reaction rate constants
+        w0 = K * C0**m  # apparent reaction rate given temperature and concentraion from the previous iteration
+        dw = m * w0 / C0  # its derivative with respect to concentration
+        R = - h*h*Le * dw  # reaction-related column for linearized problem
+        R[0,0], R[N-1,0] = 0, 0  # except boundaries
+        R = np.concatenate((np.zeros((N,1)), R, np.zeros((N,1))), axis=1)  # reaction matrix
+        AD += R  # diffusion-reaction matrix
+        BD = h*h*Le*w0*(1-m) 
+        BD[N-1] = 1  # outer concentration
+        C = progonka_col(AD, BD)  # solve
+        w = K * C**m    # next approximation to the reaction rate
+        BT = - h*h*Tad*w  # chemical heat sources
+        
+        Ts = 1 + Ar*T0[0]  # surface wire temperature
+        BT[0,0], BT[N-1,0] = h*Ki + h*Bo - h*Bo*Ts**4*(4/Ts - 3), 0  # boundary conditions
+        AT[0,0] = 1 + h*Bo*4*Ar*Ts**3 
+        T = progonka_col(AT, BT)  # coagula
+        dT = np.abs(T-T0).max()  # temperature convergence
+        dC = np.abs(C - C0).max() # concentration convergence
+        if dT+dC < 1e-3:  # if convergence is acceptable
+            solved = True  # then we have a solution
+        if k > 100:  # if we get too much iterations
+            break    # then we may fall in a loop
+        if T.max() > 2*Tad:    # if we get too high temperatures
+            break              # then maybe we lost balances
+
+    if isplot:                      # plot the solution
+        plt.plot(r, T / Tad, r, C)  
+        plt.show()
+
+    return T.max(), C.min()        # we need surface values
+
+X = np.arange(0, 150, 1)          # the set of parameters
+k = 0                             # counter
+A = np.ndarray((len(X), 3))        # array to fill
+for x in X:                      # loop
+    Ki = x                        # Kirpichev number is varied
+    Tmax, Cmin = wire_profile(Da, Tad, Ar, Le, Ki, Bo, m, False)    # solution
+
+    print(x, Tmax, Cmin)                    # print solution
+    A[k,0], A[k,1], A[k,2] = x, Tmax, Cmin  # save it 
+    k +=1 
+
+df = pd.DataFrame(A, columns=['Ki', 'Tmax', 'Cmin'])  # we covert solutions to a table
+df.to_csv('results.csv')                              # and save it as spreadsheet
